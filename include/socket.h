@@ -12,7 +12,7 @@ public:
   Socket();
   explicit Socket(int fd);
 
-  void bind(int port);
+  void bind(const char *port);
   void listen();
 };
 

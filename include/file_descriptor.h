@@ -8,9 +8,7 @@ public:
   explicit FileDescriptor(int fd);
   ~FileDescriptor();
 
-  // TODO move and copy?
-
-private:
+protected:
   int fd_{};
 };
 
