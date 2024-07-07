@@ -7,7 +7,7 @@
 
 namespace uring_http {
 
-class Socket : FileDescriptor {
+class Socket : public FileDescriptor {
 public:
   Socket();
   explicit Socket(int fd);
