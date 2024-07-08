@@ -14,7 +14,9 @@ target_compile_options(uring_http PRIVATE -Wall -Wextra)
 set(LIBURING_PATH "~/usr/lib")
 
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    target_link_libraries(uring_http PRIVATE asan ubsan uring)
     target_compile_options(uring_http PRIVATE -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined)
+else ()
+    target_link_libraries(uring_http PRIVATE uring)
 endif ()
 
-target_link_libraries(uring_http PRIVATE uring)

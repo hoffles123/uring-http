@@ -12,6 +12,8 @@ public:
   Socket();
   explicit Socket(int fd);
 
+  int get_file_descriptor();
+
   void bind(const char *port);
   void listen();
 };

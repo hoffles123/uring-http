@@ -2,6 +2,7 @@
 
 #include <condition_variable>
 #include <functional>
+#include <iostream>
 #include <mutex>
 #include <queue>
 #include <stop_token>
@@ -16,9 +17,22 @@ public:
 
   ~ThreadPool();
 
-  size_t get_size() { return size; };
+  size_t get_size() const;
 
-  template <typename F, typename... Args> void enqueue(F &&f, Args &&...args);
+  void thread_loop(const std::stop_token &stop_token);
+
+  template <typename F, typename... Args>
+  inline void enqueue(F &&f, Args &&...args) {
+    auto task = [f = std::forward<F>(f), ... args = std::forward<Args>(args)](
+                    const std::stop_token &stop_token) {
+      if (stop_token.stop_requested())
+        return;
+      f(args...);
+    };
+
+    tasks.emplace(std::move(task));
+    cv.notify_all();
+  }
 
 private:
   size_t size;
