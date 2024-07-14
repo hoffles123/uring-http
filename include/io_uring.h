@@ -1,5 +1,6 @@
 #pragma once
 
+#include <http_parser.h>
 #include <liburing.h>
 #include <memory>
 #include <sys/uio.h>
@@ -43,6 +44,7 @@ public:
 
 private:
   io_uring io_uring_;
+  HttpParser http_parser{};
 };
 
 } // namespace uring_http

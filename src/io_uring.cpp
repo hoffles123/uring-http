@@ -1,5 +1,7 @@
 #include "io_uring.h"
+#include "file_descriptor.h"
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -29,10 +31,7 @@ void IOUring::event_loop(int server_socket_fd) {
 
   while (true) {
     io_uring_cqe *cqe;
-    std::cout << std::this_thread::get_id() << " waitin on cqe" << std::endl;
     int result = io_uring_wait_cqe(&io_uring_, &cqe);
-    std::cout << std::this_thread::get_id() << " finished waiting on cqe"
-              << std::endl;
     if (result < 0) {
       throw std::runtime_error("failed to wait for io_uring cqe");
     }
@@ -55,11 +54,7 @@ void IOUring::event_loop(int server_socket_fd) {
       std::cout << "received write" << std::endl;
       break;
     }
-    std::cout << std::this_thread::get_id() << " check last cqe seen"
-              << std::endl;
     io_uring_cqe_seen(&io_uring_, cqe);
-    std::cout << std::this_thread::get_id() << " past last cqe seen"
-              << std::endl;
   }
 }
 
@@ -95,10 +90,50 @@ void IOUring::submit_read_request(int client_socket_fd) {
 
 void IOUring::handle_client_request(std::unique_ptr<URingRequest> req) {
   auto iov = req->iov_[0];
-  std::cout << "Received data length: " << iov.iov_len << std::endl;
-  std::cout << "Received data content: " << static_cast<char *>(iov.iov_base)
-            << std::endl;
-  submit_write_request(std::move(req));
+
+  auto http_req = http_parser.parse_request(static_cast<char *>(iov.iov_base));
+
+  auto writeReq = std::make_unique<URingRequest>();
+  writeReq->client_socket_fd_ = req->client_socket_fd_;
+  writeReq->iov_.resize(3);
+
+  std::string s = "HTTP/1.0 200 OK\r\n";
+  size_t s_len = s.size();
+  writeReq->iov_[0].iov_base = new char[s_len];
+  writeReq->iov_[0].iov_len = s_len;
+  std::memcpy(writeReq->iov_[0].iov_base, s.c_str(), s_len);
+
+  const char *home_dr = std::getenv("HOME");
+  std::filesystem::path file_path =
+      std::filesystem::path(home_dr) / "testing/test.txt";
+
+  if (std::filesystem::exists(file_path) &&
+      std::filesystem::is_regular_file(file_path)) {
+    const uintmax_t file_size = std::filesystem::file_size(file_path);
+
+    std::cout << "file exists" << std::endl;
+
+    std::ostringstream oss;
+    oss << "content-length: " << file_size << "\r\n\r\n";
+    std::string l = oss.str();
+    writeReq->iov_[1].iov_base = new char[l.size()];
+    writeReq->iov_[1].iov_len = l.size();
+    std::memcpy(writeReq->iov_[1].iov_base, l.c_str(), l.size());
+
+    char *buf = new char[file_size];
+    int fd = open(file_path.c_str(), O_RDONLY);
+    if (fd < 0)
+      throw std::runtime_error("failed to open file");
+
+    int ret = read(fd, buf, file_size);
+    if (ret < file_size)
+      throw std::runtime_error("encountered a short read");
+    close(fd);
+    writeReq->iov_[2].iov_base = buf;
+    writeReq->iov_[2].iov_len = file_size;
+  }
+
+  submit_write_request(std::move(writeReq));
 }
 
 void IOUring::submit_write_request(std::unique_ptr<URingRequest> req) {
