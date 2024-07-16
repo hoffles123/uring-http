@@ -14,7 +14,6 @@ ThreadPool::ThreadPool(size_t n) : size(n) {
 
 ThreadPool::~ThreadPool() {
   std::cout << "Cleaning up thread pool" << std::endl;
-  stop_source_.request_stop();
   cv.notify_all();
 }
 

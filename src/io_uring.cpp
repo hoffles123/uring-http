@@ -1,9 +1,7 @@
 #include "io_uring.h"
-#include "file_descriptor.h"
 #include <cstring>
 #include <filesystem>
 #include <iostream>
-#include <memory>
 #include <thread>
 
 namespace uring_http {
@@ -41,17 +39,14 @@ void IOUring::event_loop(int server_socket_fd) {
 
     switch (req->event_type_) {
     case EVENT_TYPE_ACCEPT:
-      std::cout << "received accept" << std::endl;
       submit_accept_request(server_socket_fd);
       submit_read_request(cqe->res);
       break;
     case EVENT_TYPE_READ:
-      std::cout << "received read" << std::endl;
       handle_client_request(std::move(req));
       break;
     case EVENT_TYPE_WRITE:
       close(req->client_socket_fd_);
-      std::cout << "received write" << std::endl;
       break;
     }
     io_uring_cqe_seen(&io_uring_, cqe);
@@ -105,13 +100,11 @@ void IOUring::handle_client_request(std::unique_ptr<URingRequest> req) {
 
   const char *home_dr = std::getenv("HOME");
   std::filesystem::path file_path =
-      std::filesystem::path(home_dr) / "testing/test.txt";
+      std::filesystem::path(home_dr) / http_req.url;
 
   if (std::filesystem::exists(file_path) &&
       std::filesystem::is_regular_file(file_path)) {
     const uintmax_t file_size = std::filesystem::file_size(file_path);
-
-    std::cout << "file exists" << std::endl;
 
     std::ostringstream oss;
     oss << "content-length: " << file_size << "\r\n\r\n";

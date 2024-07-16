@@ -12,8 +12,10 @@ public:
 
 private:
   std::vector<std::string_view> splitByChar(std::string_view, char delim);
+
   std::vector<std::string_view> splitByStr(std::string_view,
                                            std::string_view delim);
+
   std::string_view trim_whitespace(std::string_view str);
 };
 

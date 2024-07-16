@@ -7,8 +7,6 @@ namespace uring_http {
 
 Socket::Socket() = default;
 
-Socket::Socket(int fd) : FileDescriptor(fd) {}
-
 int Socket::get_file_descriptor() { return fd_; }
 
 void Socket::bind(const char *port) {

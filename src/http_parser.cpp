@@ -1,13 +1,10 @@
 #include "http_parser.h"
 #include <algorithm>
 #include <filesystem>
-#include <iostream>
 
 namespace uring_http {
 
 HTTPRequest HttpParser::parse_request(std::string_view msg) {
-  std::cout << msg << std::endl;
-
   const std::vector<std::string_view> request_line_list =
       splitByStr(msg, "\r\n");
   const std::vector<std::string_view> status_line_list =
@@ -16,6 +13,7 @@ HTTPRequest HttpParser::parse_request(std::string_view msg) {
   HTTPRequest req{};
   req.method = status_line_list[0];
   req.url = status_line_list[1];
+  req.url = req.url.erase(0, 1);
   req.version = status_line_list[2];
 
   for (size_t i = 1; i < request_line_list.size(); ++i) {

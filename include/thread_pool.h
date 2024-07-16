@@ -39,7 +39,6 @@ private:
   std::vector<std::jthread> workers_;
   std::queue<std::function<void(std::stop_token)>> tasks;
 
-  std::stop_source stop_source_;
   std::mutex mut;
   std::condition_variable cv;
 };

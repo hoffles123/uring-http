@@ -29,7 +29,13 @@ HttpWorker::HttpWorker(const char *port) : server_socket_() {
 }
 
 void HttpWorker::event_loop() {
-  IOUring::get_instance().event_loop(server_socket_.get_file_descriptor());
+  try {
+    IOUring::get_instance().event_loop(server_socket_.get_file_descriptor());
+  } catch (const std::exception &e) {
+    std::cerr << "Caught exception: " << e.what() << std::endl;
+  } catch (...) {
+    std::cerr << "Caught unknown exception" << std::endl;
+  }
 }
 
 } // namespace uring_http
